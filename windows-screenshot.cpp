@@ -31,6 +31,12 @@ int main()
 	getchar();
 	return 0;
 }
+
+BOOL CaptureEnumMonitorsFunc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
+	if (!CaptureWindowFromDC(hMonitor, hdcMonitor, lprcMonitor)) return false;
+	return true;
+};
+
 BOOL CaptureWindowFromDC(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor) {
 	screenNum++;
 	int width = lprcMonitor->right - lprcMonitor->left;
@@ -62,10 +68,5 @@ BOOL CaptureWindowFromDC(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor) 
 	m_MyImage.ReleaseDC();
 	m_MyImage.Destroy();
 	// restore
-	return true;
-};
-
-BOOL CaptureEnumMonitorsFunc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
-	if (!CaptureWindowFromDC(hMonitor, hdcMonitor, lprcMonitor)) return false;
 	return true;
 };
