@@ -10,9 +10,9 @@
 #pragma comment( lib, "gdiplus" )
 
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid);
-int screenNum = 0;
+int screenNum;
 std::vector<std::string> paths;
-HDC hDCScreen = GetDC(NULL);
+HDC hDCScreen;
 
 std::string GetLocalAppDataPath() {
 	char buffer[MAX_PATH];
@@ -107,6 +107,9 @@ BOOL CaptureEnumMonitorsFunc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonit
 }
 int main()
 {
+	screenNum = 0;
+	paths.clear();
+	hDCScreen = GetDC(NULL);
 	EnumDisplayMonitors(hDCScreen, NULL, (MONITORENUMPROC)(&CaptureEnumMonitorsFunc), NULL);
 	DeleteDC(hDCScreen);
 	getchar();
