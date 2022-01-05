@@ -1,72 +1,120 @@
-// electron-shot.cpp : Defines the entry point for the console application.
-//
-
 #include "stdafx.h"
-#include "Windows.h"
-#include <iostream>
-#include <atlimage.h>
-#include <atltime.h>
+#include <windows.h>
+#include <GdiPlus.h>
 #include <string>
+#include <ShlObj.h>
 #include <vector>
+#include <iostream>
+#include <ctime>
 
-BOOL CaptureEnumMonitorsFunc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData);
-BOOL CaptureWindowFromDC(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor);
-CImage m_MyImage;
-HDC hDCImg = NULL;
-int screenNum = 0;
-std::vector<std::string> paths;
+#pragma comment( lib, "gdiplus" )
 
-int main()
+int GetEncoderClsid(const WCHAR* format, CLSID* pClsid);
+
+typedef struct mData {
+	int screenNum;
+	std::vector<std::string> paths;
+}monitorData;
+
+std::string GetLocalAppDataPath() {
+	char buffer[MAX_PATH];
+	SHGetSpecialFolderPathA(NULL, buffer, CSIDL_LOCAL_APPDATA, NULL);
+	return buffer;
+}
+int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
 {
-	HDC hDCScreen = GetDC(NULL);
-	EnumDisplayMonitors(hDCScreen, NULL, (MONITORENUMPROC)(&CaptureEnumMonitorsFunc), NULL);
-	std::cout << "ok" << std::endl;
-	
-	for (int i = 0; i < paths.size(); i++) {
-		std::cout << "strFileName: " << paths[i] << std::endl;
+	using namespace Gdiplus;
+	UINT  num = 0;          // number of image encoders
+	UINT  size = 0;         // size of the image encoder array in bytes
+
+	ImageCodecInfo* pImageCodecInfo = NULL;
+
+	GetImageEncodersSize(&num, &size);
+	if (size == 0)
+		return -1;  // Failure
+
+	pImageCodecInfo = (ImageCodecInfo*)(malloc(size));
+	if (pImageCodecInfo == NULL)
+		return -1;  // Failure
+
+	GetImageEncoders(num, size, pImageCodecInfo);
+
+	for (UINT j = 0; j < num; ++j)
+	{
+		if (wcscmp(pImageCodecInfo[j].MimeType, format) == 0)
+		{
+			*pClsid = pImageCodecInfo[j].Clsid;
+			free(pImageCodecInfo);
+			return j;  // Success
+		}
 	}
-	
-	DeleteDC(hDCScreen);
-	DeleteDC(hDCImg);
-	getchar();
+
+	free(pImageCodecInfo);
 	return 0;
 }
-
 BOOL CaptureEnumMonitorsFunc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) {
-	if (!CaptureWindowFromDC(hMonitor, hdcMonitor, lprcMonitor)) return false;
-	return true;
-};
+	using namespace Gdiplus;
+	GdiplusStartupInput gdiplusStartupInput;
+	ULONG_PTR gdiplusToken;
+	GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+	{
+		monitorData* data = (monitorData*)dwData;
+		int screenNum = data->screenNum++;
+		int width = lprcMonitor->right - lprcMonitor->left;
+		int height = lprcMonitor->bottom - lprcMonitor->top;
+		int x = lprcMonitor->left;
+		int y = lprcMonitor->top;
 
-BOOL CaptureWindowFromDC(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor) {
-	screenNum++;
-	int width = lprcMonitor->right - lprcMonitor->left;
-	int height = lprcMonitor->bottom - lprcMonitor->top;
-	int bitPerPixel = GetDeviceCaps(hdcMonitor, BITSPIXEL);//Get the number of bits per pixel
-	int x = lprcMonitor->left;
-	int y = lprcMonitor->top;
+		std::cout << "width: " << width << " height: " << height << std::endl;
 
-	std::cout << "width:" << width << " height:" << height << std::endl;
-	std::cout << "bitPerPixel:" << bitPerPixel << std::endl;
+		std::cout << "x: " << x << " y: " << y << std::endl;
 
-	m_MyImage.Create(width, height, bitPerPixel);
-	hDCImg = m_MyImage.GetDC();
-	BitBlt(hDCImg, 0, 0, width, height, hdcMonitor, x, y, SRCCOPY);
+		HDC hDCScreen = GetDC(NULL);
+		HDC memdc = CreateCompatibleDC(hDCScreen);
+		HBITMAP membit = CreateCompatibleBitmap(hDCScreen, width, height);
 
-	//File name saved to
-	std::string strFileName = "C:\\";
-	strFileName += "ScreenShot\\fullscreen";
-	time_t now = time(NULL);
-	std::string s_now = std::to_string(now);
-	// std::string file_path = "/.wxwork_local/screen_shot/fullscreen_";
-	strFileName = strFileName + "_" + std::to_string(screenNum) + "_"  + s_now + ".png";
+		std::cout << "membit: " << membit << std::endl;
 
-	CString cs(strFileName.c_str());
+		HBITMAP hOldBitmap = (HBITMAP)SelectObject(memdc, membit);
 
-	m_MyImage.Save(cs, Gdiplus::ImageFormatPNG);
-	if (!strFileName.empty()) paths.push_back(strFileName);
+		std::cout << "hOldBitmap: " << hOldBitmap << std::endl;
 
-	m_MyImage.ReleaseDC();
-	m_MyImage.Destroy();
+		BitBlt(memdc, 0, 0, width, height, hDCScreen, x, y, SRCCOPY);
+
+		//File name saved to
+		std::string strFileName = GetLocalAppDataPath() + "\\Temp\\screen_shot\\";
+		time_t now = time(NULL);
+		std::string s_now = std::to_string(now);
+		strFileName = strFileName + "fullscreen_" + std::to_string(screenNum) + "_" + s_now + ".png";
+
+		std::cout << "strFileName:" << strFileName << std::endl;
+
+		Gdiplus::Bitmap bitmap(membit, NULL);
+		CLSID clsid;
+		GetEncoderClsid(L"image/png", &clsid);
+
+		std::wstring wStrFileName = std::wstring(strFileName.begin(), strFileName.end());
+
+		bitmap.Save(wStrFileName.c_str(), &clsid);
+
+		SelectObject(memdc, hOldBitmap);
+
+		DeleteObject(memdc);
+
+		DeleteObject(membit);
+		data->paths.push_back(strFileName);
+	}
+
+	GdiplusShutdown(gdiplusToken);
 	// restore
 	return true;
-};
+}
+int main()
+{
+	monitorData mdata;
+	mdata.screenNum = 0;
+	HDC hDCScreen = GetDC(NULL);
+	EnumDisplayMonitors(hDCScreen, NULL, (MONITORENUMPROC)(&CaptureEnumMonitorsFunc), LPARAM(&mdata));
+	DeleteDC(hDCScreen);
+	getchar();
+}

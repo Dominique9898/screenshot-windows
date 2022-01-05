@@ -10,9 +10,11 @@
 #pragma comment( lib, "gdiplus" )
 
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid);
-int screenNum;
-std::vector<std::string> paths;
-HDC hDCScreen;
+
+typedef struct mData {
+	int screenNum;
+	std::vector<std::string> paths;
+}monitorData;
 
 std::string GetLocalAppDataPath() {
 	char buffer[MAX_PATH];
@@ -56,7 +58,9 @@ BOOL CaptureEnumMonitorsFunc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonit
 	ULONG_PTR gdiplusToken;
 	GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 	{
-		screenNum++;
+		monitorData* data = (monitorData*)dwData;
+		int screenNum = data->screenNum++;
+
 		int width = lprcMonitor->right - lprcMonitor->left;
 		int height = lprcMonitor->bottom - lprcMonitor->top;
 		int x = lprcMonitor->left;
@@ -66,6 +70,7 @@ BOOL CaptureEnumMonitorsFunc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonit
 
 		std::cout << "x: " << x << " y: " << y << std::endl;
 
+		HDC hDCScreen = GetDC(NULL);
 		HDC memdc = CreateCompatibleDC(hDCScreen);
 		HBITMAP membit = CreateCompatibleBitmap(hDCScreen, width, height);
 
@@ -96,9 +101,9 @@ BOOL CaptureEnumMonitorsFunc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonit
 		SelectObject(memdc, hOldBitmap);
 
 		DeleteObject(memdc);
-
 		DeleteObject(membit);
-		paths.push_back(strFileName);
+		DeleteDC(hDCScreen);
+		data->paths.push_back(strFileName);
 	}
 
 	GdiplusShutdown(gdiplusToken);
@@ -107,10 +112,10 @@ BOOL CaptureEnumMonitorsFunc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonit
 }
 int main()
 {
-	screenNum = 0;
-	paths.clear();
-	hDCScreen = GetDC(NULL);
-	EnumDisplayMonitors(hDCScreen, NULL, (MONITORENUMPROC)(&CaptureEnumMonitorsFunc), NULL);
+	monitorData mdata;
+	mdata.screenNum = 0;
+	HDC hDCScreen = GetDC(NULL);
+	EnumDisplayMonitors(hDCScreen, NULL, (MONITORENUMPROC)(&CaptureEnumMonitorsFunc), LPARAM(&mdata));
 	DeleteDC(hDCScreen);
 	getchar();
 }
