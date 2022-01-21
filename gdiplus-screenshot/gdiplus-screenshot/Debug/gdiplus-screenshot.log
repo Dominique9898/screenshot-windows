@@ -1,0 +1,4 @@
+﻿  gdiplus-screenshot.cpp
+c:\users\dominikwei\documents\coding\git\screenshot-windows\gdiplus-screenshot\gdiplus-screenshot\gdiplus-screenshot.cpp(21): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+  gdiplus-screenshot.vcxproj -> C:\Users\dominikwei\Documents\Coding\git\screenshot-windows\gdiplus-screenshot\Debug\gdiplus-screenshot.exe
+  gdiplus-screenshot.vcxproj -> C:\Users\dominikwei\Documents\Coding\git\screenshot-windows\gdiplus-screenshot\Debug\gdiplus-screenshot.pdb (Full PDB)

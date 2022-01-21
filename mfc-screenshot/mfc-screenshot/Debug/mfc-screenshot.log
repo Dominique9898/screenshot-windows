@@ -1,0 +1,5 @@
+﻿  stdafx.cpp
+  mfc-screenshot.cpp
+c:\users\dominikwei\documents\coding\git\screenshot-windows\mfc-screenshot\mfc-screenshot\mfc-screenshot.cpp(27): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+  mfc-screenshot.vcxproj -> C:\Users\dominikwei\Documents\Coding\git\screenshot-windows\mfc-screenshot\Debug\mfc-screenshot.exe
+  mfc-screenshot.vcxproj -> C:\Users\dominikwei\Documents\Coding\git\screenshot-windows\mfc-screenshot\Debug\mfc-screenshot.pdb (Full PDB)
