@@ -90,11 +90,11 @@ BOOL CaptureEnumMonitorsFunc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonit
 
 		std::cout << "x: " << cxPhysical << " y: " << cyPhysical << std::endl;
 		// get calculate scale factor
-		float horzScale = ((float)widthPhysical / (float)wdithLogical);
-		float vertScale = ((float)heightPhysical / (float)heightLogical);
+		float horzScale = mRound((float)widthPhysical / (float)wdithLogical);
+		float vertScale = mRound((float)heightPhysical / (float)heightLogical);
 
-		std::cout << "horzScale "<< mRound(horzScale) << std::endl;
-		std::cout << "vertScale " << mRound(vertScale) << std::endl;
+		std::cout << "horzScale "<< horzScale << std::endl;
+		std::cout << "vertScale " << horzScale << std::endl;
 
 		HDC hDCScreen = GetDC(NULL);
 		HDC memdc = CreateCompatibleDC(hDCScreen);
